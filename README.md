@@ -2,7 +2,7 @@
 
 An AI executive-speaking gym that helps technology leaders practise concise, credible C-level communication.
 
-**Architecture: Option B — ElevenLabs speech layer + OpenAI reasoning layer.**
+**Architecture: ElevenLabs speech layer + OpenAI reasoning layer.**
 
 ## What the MVP does
 
