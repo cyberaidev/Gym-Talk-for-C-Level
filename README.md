@@ -111,9 +111,9 @@ Multi-agent simulations: CEO + CFO + CISO, each with different objectives, follo
 - Add rate limiting before exposing the APIs publicly.
 - For enterprise deployment, document provider retention controls and data-processing requirements.
 
-## TED and external training material
+## External training material
 
-The product should learn *frameworks*, not depend on copying TED transcripts. TED-style material can inform storytelling, openings, pacing, and narrative structure, while executive-conversation mode should optimise for brevity, evidence, decision relevance, and challenge handling. Any third-party training corpus should be reviewed for licensing before ingestion.
+The product should learn communication frameworks for storytelling, openings, pacing, and narrative structure. Executive-conversation mode should optimise for brevity, evidence, decision relevance, and challenge handling. Any third-party training corpus should be reviewed for licensing before ingestion.
 
 ## Tech stack
 
