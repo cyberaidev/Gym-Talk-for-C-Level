@@ -1,4 +1,5 @@
-export type Persona = "CEO" | "CFO" | "CISO" | "CIO" | "Board Member" | "Sceptical Customer";
+export const PERSONAS = ["CEO", "CFO", "CISO", "CIO", "Board Member", "Sceptical Customer"] as const;
+export type Persona = typeof PERSONAS[number];
 
 export type ScoreSet = {
   answerFirst: number;

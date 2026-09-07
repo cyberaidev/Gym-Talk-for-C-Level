@@ -55,11 +55,11 @@ This MVP uses batch Scribe STT and synchronous TTS because it is easy to deploy 
 
 ```bash
 cp .env.example .env.local
-npm install
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000` and allow microphone access.
+Use Node.js 22.12 or newer. Before starting, set the provider keys and `GT_ACCESS_PASSWORD` in `.env.local`. Generate a unique password with `openssl rand -hex 32`; the app requires at least 32 characters. Open `http://localhost:3000`, sign in as `coach` with that password, and allow microphone access. The app and all paid API routes reject requests when access protection is missing.
 
 ## Environment variables
 
@@ -70,9 +70,36 @@ ELEVENLABS_API_KEY=...
 ELEVENLABS_VOICE_ID=...
 ELEVENLABS_TTS_MODEL=eleven_flash_v2_5
 ELEVENLABS_STT_MODEL=scribe_v2
+GT_ACCESS_USERNAME=coach
+GT_ACCESS_PASSWORD=<unique-random-password-at-least-32-characters>
+UPSTASH_REDIS_REST_URL=<production-redis-rest-url>
+UPSTASH_REDIS_REST_TOKEN=<production-redis-rest-token>
 ```
 
 Use your own ElevenLabs voice ID. Do not commit `.env.local`.
+
+## Production access and usage limits
+
+Serve the app over HTTPS. Browser HTTP Basic authentication protects the app, and each API handler independently checks the same credential. This MVP uses one shared practice account; rotate its password to revoke access. It is not a multi-user identity system. Browser sign-in lasts until the browser clears its cached HTTP credentials.
+
+Production requires both Upstash Redis REST variables. Provision a dedicated database and a token permitted to run EVAL, TIME, GET, INCR, EXPIRE, TTL, ZADD, ZCARD, ZREM, ZREMRANGEBYSCORE, and PEXPIRE. Atomic reservations limit the shared account across every instance to 30 paid API requests per rolling minute, 300 per 24-hour quota window, and three concurrent requests. A workout normally uses three requests. Failures and invalid authenticated requests count toward quotas. If Redis is unavailable or misconfigured, paid requests fail closed. Development alone can use an in-memory limiter, which resets when its process restarts.
+
+Limits in `lib/limits.ts` also cap JSON bodies at 64 KiB, audio at 8 MiB, transcription text at 12,000 characters, and speech synthesis text at 4,000 characters. Recordings stop after two minutes in the browser; the server bounds encoded audio bytes and does not independently decode its duration. Configure your ingress request-body limit to match or be smaller than the application limit. Each API operation has a 60-second deadline, and provider calls have no automatic retries. Deployment functions must support at least 70 seconds. Pending concurrency reservations expire after 70 seconds if a worker exits.
+
+Use **Cancel** to discard pending work, **Retry analysis** to resubmit a failed recording, and **Retry audio** when playback fails or the browser blocks autoplay. **Answer follow-up** selects the generated challenge; **Next question** advances the predefined exercises. Starting an answer stops coaching playback.
+
+## Verification
+
+```bash
+npm ci
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm audit
+```
+
+GitHub Actions runs these checks. Regression tests mock microphone and provider interfaces, so they do not require API credentials or incur provider charges. The committed lockfile fixes the tested dependency tree; a PostCSS override keeps the Next.js 15 dependency patched.
 
 ## Coaching model
 
@@ -104,16 +131,16 @@ Multi-agent simulations: CEO + CFO + CISO, each with different objectives, follo
 
 ## Security notes
 
-- Keep OpenAI and ElevenLabs API keys server-side only.
-- Add authentication before storing recordings or transcripts.
-- Make recording retention explicit and configurable.
-- Avoid storing raw audio by default unless the user opts in.
-- Add rate limiting before exposing the APIs publicly.
+- Keep provider and access credentials server-side only; HTTP Basic authentication requires HTTPS outside localhost.
+- No recordings, transcripts, or scorecards are persisted by this app. A failed recording is kept in browser memory only for Retry analysis and is discarded when the user starts another exercise, cancels, or leaves the page.
+- Audio is sent to ElevenLabs; transcripts are sent to OpenAI. The UI explains this before recording. OpenAI Responses requests use `store: false`; this does not disable provider abuse-monitoring retention. Review both providers' account-specific retention controls before handling confidential material.
+- Shared quotas and payload limits protect provider access; Redis stores counters and random reservation IDs, not recordings or transcripts.
+- Use separate named accounts or a managed identity provider before a multi-user rollout.
 - For enterprise deployment, document provider retention controls and data-processing requirements.
 
-## TED and external training material
+## External training material
 
-The product should learn *frameworks*, not depend on copying TED transcripts. TED-style material can inform storytelling, openings, pacing, and narrative structure, while executive-conversation mode should optimise for brevity, evidence, decision relevance, and challenge handling. Any third-party training corpus should be reviewed for licensing before ingestion.
+The product should learn communication frameworks for storytelling, openings, pacing, and narrative structure. Executive-conversation mode should optimise for brevity, evidence, decision relevance, and challenge handling. Any third-party training corpus should be reviewed for licensing before ingestion.
 
 ## Tech stack
 
